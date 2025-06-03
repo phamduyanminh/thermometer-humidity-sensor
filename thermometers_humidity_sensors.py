@@ -16,9 +16,9 @@ def thermometer_humidity_sensors(log_file):
         print("Log is empty")
         return
     
-    sensor_map = {}
-    sensor_order = []
-    sensor_result_output = []
+    sensor_map: dict[Sensor] = {}
+    sensor_order: list[str] = []
+    sensor_result_output: list[str] = []
     
     reference_line = lines[0].split()
     reference_thermometer = float(reference_line[1])
