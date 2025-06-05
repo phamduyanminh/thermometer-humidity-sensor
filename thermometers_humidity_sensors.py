@@ -1,3 +1,5 @@
+import math
+
 class Sensor:
     def __init__(self, name, type):
         self.name = name
@@ -7,6 +9,17 @@ class Sensor:
     def set_datas(self, value):
         self.datas.append(value)
         
+
+def calculate_mean(datas):
+    if not datas:
+        return 0.0
+    return sum(datas)/len(datas)
+
+def calculate_std(datas, mean):
+    if not datas:
+        return 0.0
+    variance = sum([(data - mean) ** 2 for data in datas]) / len(datas)
+    return math.sqrt(variance)
 
 def thermometer_humidity_sensors(log_file):
     lines = open(log_file, "r").readlines()
