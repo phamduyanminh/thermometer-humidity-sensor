@@ -1,3 +1,5 @@
+import math
+
 class Sensor:
     def __init__(self, name, type):
         self.name = name
@@ -7,6 +9,23 @@ class Sensor:
     def set_datas(self, value):
         self.datas.append(value)
         
+    def get_datas(self):
+        return self.datas
+    
+    def get_type(self):
+        return self.type
+        
+
+def calculate_mean(datas):
+    if not datas:
+        return 0.0
+    return sum(datas)/len(datas)
+
+def calculate_std(datas, mean):
+    if not datas:
+        return 0.0
+    variance = sum([(data - mean) ** 2 for data in datas]) / len(datas)
+    return math.sqrt(variance)
 
 def thermometer_humidity_sensors(log_file):
     lines = open(log_file, "r").readlines()
@@ -41,7 +60,50 @@ def thermometer_humidity_sensors(log_file):
             if sensor_name in sensor_map:
                 sensor_object = sensor_map[sensor_name]
                 sensor_object.set_datas(sensor_value)
+    
+    for sensor_name in sensor_map:
+        sensor_object = sensor_map[sensor_name]        
+        sensor_type = sensor_object.get_type()
+        sensor_datas = sensor_object.get_datas()
+        result = "N/A"
+        
+        if sensor_type == "thermometer":
+            mean = calculate_mean(sensor_datas)
+            std = calculate_std(sensor_datas, mean)
+            mean_difference = abs(mean - reference_thermometer)
+            
+            if mean_difference <= 0.5:
+                if std < 3:
+                    result = "ultra precise"
+                elif std < 5:
+                    result = "very precise"
+                else:
+                    result = "precise"
+            else:
+                result = "precise"
                 
+        if sensor_type == "humidity":
+            if not sensor_datas:
+                result = "discard"
+            else:
+                humidity_lower_range = reference_humidity - (0.01 * reference_humidity)
+                humidity_upper_range = reference_humidity + (0.01 * reference_humidity)
+
+                all_datas_are_in_range = True
+                for data_point in sensor_datas:
+                    if not (humidity_lower_range <= data_point <= humidity_upper_range):
+                        all_datas_are_in_range = False
+                        break
+                
+                if all_datas_are_in_range:
+                    result = "OK"
+                else:
+                    result = "discard"
+            
+        sensor_result_output.append(f"{sensor_name}: {result}")
+    
+    for final_result in sensor_result_output:
+        print(final_result)
 
 log_file = "log.txt"
 thermometer_humidity_sensors(log_file)
