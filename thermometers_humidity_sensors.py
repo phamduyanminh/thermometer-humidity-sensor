@@ -111,7 +111,6 @@ def thermometer_humidity_sensors(log_file):
         return
     
     sensor_map: dict[Sensor] = {}
-    sensor_order: list[str] = []
     sensor_result_output: list[str] = []
     
     reference_line = lines[0].split()
