@@ -1,12 +1,14 @@
-Widgets makes inexpensive thermometers and humidity sensors. In order to spot check the manufacturing process, some units are put in a test environment (for an unspecified amount of time) and their readings are logged. The test environment has a static, known temperature and relative humidity, but the sensors are expected to fluctuate a bit.
-
-As a developer, your task is to process the logs and automate the quality control evaluation. The evaluation criteria are as follows:
-
-For a thermometer, it is branded “ultra precise” if the mean of the readings is within 0.5 degrees of the known temperature, and the standard deviation is less than 3. It is branded “very precise” if the mean is within 0.5 degrees of the room, and the standard deviation is under 5. Otherwise, it’s sold as “precise”.
-
+Widgets makes inexpensive thermometers and humidity sensors. In order to spot check the manufacturing process, 
+some units are put in a test environment (for an unspecified amount of time) and their readings are logged. 
+The test environment has a static, known temperature and relative humidity, but the sensors are expected to fluctuate a bit.
+As a developer, your task is to process the logs and automate the quality control evaluation. 
+The evaluation criteria are as follows:
+For a thermometer, it is branded “ultra precise” if the mean of the readings is within 0.5 degrees of the known temperature, 
+and the standard deviation is less than 3. It is branded “very precise” if the mean is within 0.5 degrees of the room, and the standard deviation is under 5. 
+Otherwise, it’s sold as “precise”.
 For a humidity sensor, it must be discarded unless it is within 1% of the reference value for all readings.
-
-An example log looks like the following. The first line means that the room was held at a constant 70 degrees, 45% relative humidity. Subsequent lines either identify a sensor (<type> <name>) or give a reading (<time> <name> <value>).
+An example log looks like the following. The first line means that the room was held at a constant 70 degrees, 45% relative humidity. 
+Subsequent lines either identify a sensor (<type> <name>) or give a reading (<time> <name> <value>).
 
 reference 70.0 45.0
 thermometer temp-1
