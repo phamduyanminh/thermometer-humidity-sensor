@@ -1,4 +1,5 @@
 import math
+from enum import Enum
 
 class Sensor:
     def __init__(self, name, type):
@@ -6,8 +7,6 @@ class Sensor:
         self.type = type
         self.datas = []
         #TODO:
-        # OPTION 1: CHECK TYPE (NOT PREFER)
-        # OPTION 2: FACTORY PATTERN (BASED ON THE CREATED TYPE) -> ADD REFERENCE INTO IT 
         # WAY TOO MUCH HARDCODE -> CONST TYPE (NEED TO BE CAPITALIZED | INDEX VALUE)
     
     def set_datas(self, value):
@@ -18,55 +17,86 @@ class Sensor:
     
     def get_type(self):
         return self.type
+    
+    def validate_sensor(self, reference):
+        pass
+    
+###########################################################################################
+# Enum Sensor Type
+class SensorType(Enum):
+    THERMOMETER  = "thermometer"
+    HUMIDITY = "humidity"
 
-    def validate_sensor(self, reference_thermometer, reference_humidity):
+###########################################################################################
+# Class Thermometer    
+class Thermometor(Sensor):
+    def __init__(self, name):
+        super().__init__(name, SensorType.THERMOMETER.value)
+        
+    def validate_sensor(self, reference_thermometer):
         result = "N/A"
         
-        if self.type == "thermometer":
-            mean = calculate_mean(self.datas)
-            std = calculate_std(self.datas, mean)
-            mean_difference = abs(mean - reference_thermometer)
-            
-            if mean_difference <= 0.5:
-                if std < 3:
-                    result = "ultra precise"
-                elif std < 5:
-                    result = "very precise"
-                else:
-                    result = "precise"
+        if not self.datas:
+            return result 
+        
+        mean = calculate_mean(self.datas)
+        std = calculate_std(self.datas, mean)
+        mean_difference = abs(mean - reference_thermometer)
+        
+        if mean_difference <= 0.5:
+            if std < 3:
+                result = "ultra precise"
+            elif std < 5:
+                result = "very precise"
             else:
-                result = "precise"      
-                
-        elif self.type == "humidity":
-            if not self.datas:
-                result = "discard"
-            else:
-                humidity_lower_range = reference_humidity - (0.01 * reference_humidity)
-                humidity_upper_range = reference_humidity + (0.01 * reference_humidity)
+                result = "precise"
+        else:
+            result = "precise"
 
-                all_datas_are_in_range = True
-                for data_point in self.datas:
-                    if not (humidity_lower_range <= data_point <= humidity_upper_range):
-                        all_datas_are_in_range = False
-                        break
-                
-                if all_datas_are_in_range:
-                    result = "OK"
-                else:
-                    result = "discard"
+###########################################################################################
+# Class Humidity        
+class Humidity(Sensor):
+    def __init__(self, name):
+        super().__init__(name, SensorType.HUMIDITY.value)
+    
+    def validate_sensor(self, reference_humidity):
+        result = "N/A"
+        
+        if not self.datas:
+                result = "discard"
+        else:
+            humidity_lower_range = reference_humidity - (0.01 * reference_humidity)
+            humidity_upper_range = reference_humidity + (0.01 * reference_humidity)
+
+            all_datas_are_in_range = True
+            for data_point in self.datas:
+                if not (humidity_lower_range <= data_point <= humidity_upper_range):
+                    all_datas_are_in_range = False
+                    break
+            
+            if all_datas_are_in_range:
+                result = "OK"
+            else:
+                result = "discard"
+        
         return result
 
+###########################################################################################
+# Function calculate mean
 def calculate_mean(datas):
     if not datas:
         return 0.0
     return sum(datas)/len(datas)
 
+# Function calculate std
 def calculate_std(datas, mean):
     if not datas:
         return 0.0
     variance = sum([(data - mean) ** 2 for data in datas]) / len(datas)
     return math.sqrt(variance)
 
+###########################################################################################
+# Main function 
 def thermometer_humidity_sensors(log_file):
     lines = open(log_file, "r").readlines()
     
@@ -75,8 +105,7 @@ def thermometer_humidity_sensors(log_file):
         print("Log is empty")
         return
     
-    sensor_map: dict[Sensor] = {}
-    sensor_order: list[str] = []
+    sensor_map: dict[str, Sensor] = {}
     sensor_result_output: list[str] = []
     
     reference_line = lines[0].split()
@@ -86,19 +115,27 @@ def thermometer_humidity_sensors(log_file):
     for line in lines[1:]:
         line_data = line.strip()
         data_section = line_data.split()
+        sensor_object = None
         
         if len(data_section) < 2 or len(data_section) > 3:
             print(f'Data is invalid!')  
             continue          
         
-        if data_section[0] == "thermometer" or data_section[0] == "humidity":
-            sensor_type = data_section[0]
+        sensor_type = data_section[0]
+        if (sensor_type == SensorType.HUMIDITY.value or sensor_type == SensorType.THERMOMETER.value):
             sensor_name = data_section[1]
             
             if sensor_name not in sensor_map:
-                sensor_map[sensor_name] = Sensor(sensor_name, sensor_type)
-                sensor_order.append(sensor_name)
-            else:
+                if sensor_type == SensorType.THERMOMETER.value:
+                    sensor_object = Thermometor(sensor_name)
+                elif sensor_type == SensorType.HUMIDITY.value:
+                    sensor_object = Humidity(sensor_name)
+                else:
+                    print('Invalid sensor type!')
+                
+                if sensor_object:
+                    sensor_map[sensor_name] = sensor_object
+            else:    
                 print(f'{sensor_name} is already in the record!')
      
         else:
@@ -111,13 +148,19 @@ def thermometer_humidity_sensors(log_file):
                 print(f'{sensor_name} is not available in record yet!')
     
     for sensor_name in sensor_map:
-        sensor_object = sensor_map[sensor_name]    
-        result = sensor_object.validate_sensor(reference_thermometer, reference_humidity)
-            
+        sensor_object = sensor_map[sensor_name]
+        result = "N/A"    
+        
+        if isinstance(sensor_object, Thermometor):
+            result = sensor_object.validate_sensor(reference_thermometer)
+        elif isinstance(sensor_object, Humidity):
+            result = sensor_object.validate_sensor(reference_humidity)
+        
         sensor_result_output.append(f"{sensor_name}: {result}")
     
     for final_result in sensor_result_output:
         print(final_result)
+
 
 log_file = "log.txt"
 thermometer_humidity_sensors(log_file)
