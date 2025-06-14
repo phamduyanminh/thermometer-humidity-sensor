@@ -1,4 +1,5 @@
 import math
+from enum import Enum
 
 class Sensor:
     def __init__(self, name, type):
@@ -16,17 +17,23 @@ class Sensor:
     
     def get_type(self):
         return self.type
-
-    def validate_sensor(self, reference_thermometer, reference_humidity):
+    
+    def validate_sensor(self, reference):
         pass
+    
+###########################################################################################
+# Enum Sensor Type
+class SensorType(Enum):
+    THERMOMETER  = "thermometer"
+    HUMIDITY = "humidity"
 
 ###########################################################################################
 # Class Thermometer    
 class Thermometor(Sensor):
     def __init__(self, name):
-        super().__init__(name, "thermometer")
+        super().__init__(name, SensorType.THERMOMETER.value)
         
-    def validate_sensor(self, reference_thermometer, reference_humidity):
+    def validate_sensor(self, reference_thermometer):
         result = "N/A"
         
         if not self.datas:
@@ -50,9 +57,9 @@ class Thermometor(Sensor):
 # Class Humidity        
 class Humidity(Sensor):
     def __init__(self, name):
-        super().__init__(name, "humidity")
+        super().__init__(name, SensorType.HUMIDITY.value)
     
-    def validate_sensor(self, reference_thermometer, reference_humidity):
+    def validate_sensor(self, reference_humidity):
         result = "N/A"
         
         if not self.datas:
@@ -73,18 +80,6 @@ class Humidity(Sensor):
                 result = "discard"
         
         return result
-
-###########################################################################################
-# Class Sensor Factory
-class SensorFactory:
-    def sensor_factory(name, sensor_type):
-        if sensor_type == "thermometer":
-            return Thermometor(name)
-        elif sensor_type == "humidity":
-            return Humidity(name)
-        else:
-            print('Invalid sensor type!')
-            return None
 
 ###########################################################################################
 # Function calculate mean
@@ -110,7 +105,7 @@ def thermometer_humidity_sensors(log_file):
         print("Log is empty")
         return
     
-    sensor_map: dict[Sensor] = {}
+    sensor_map: dict[str, Sensor] = {}
     sensor_result_output: list[str] = []
     
     reference_line = lines[0].split()
@@ -120,20 +115,27 @@ def thermometer_humidity_sensors(log_file):
     for line in lines[1:]:
         line_data = line.strip()
         data_section = line_data.split()
+        sensor_object = None
         
         if len(data_section) < 2 or len(data_section) > 3:
             print(f'Data is invalid!')  
             continue          
         
-        if data_section[0] == "thermometer" or data_section[0] == "humidity":
-            sensor_type = data_section[0]
+        sensor_type = data_section[0]
+        if (sensor_type == SensorType.HUMIDITY.value or sensor_type == SensorType.THERMOMETER.value):
             sensor_name = data_section[1]
             
             if sensor_name not in sensor_map:
-                sensor_object = SensorFactory.sensor_factory(sensor_name, sensor_type)
+                if sensor_type == SensorType.THERMOMETER.value:
+                    sensor_object = Thermometor(sensor_name)
+                elif sensor_type == SensorType.HUMIDITY.value:
+                    sensor_object = Humidity(sensor_name)
+                else:
+                    print('Invalid sensor type!')
+                
                 if sensor_object:
                     sensor_map[sensor_name] = sensor_object
-            else:
+            else:    
                 print(f'{sensor_name} is already in the record!')
      
         else:
@@ -146,8 +148,14 @@ def thermometer_humidity_sensors(log_file):
                 print(f'{sensor_name} is not available in record yet!')
     
     for sensor_name in sensor_map:
-        sensor_object = sensor_map[sensor_name]    
-        result = sensor_object.validate_sensor(reference_thermometer, reference_humidity)
+        sensor_object = sensor_map[sensor_name]
+        result = "N/A"    
+        
+        if isinstance(sensor_object, Thermometor):
+            result = sensor_object.validate_sensor(reference_thermometer)
+        elif isinstance(sensor_object, Humidity):
+            result = sensor_object.validate_sensor(reference_humidity)
+        
         sensor_result_output.append(f"{sensor_name}: {result}")
     
     for final_result in sensor_result_output:
